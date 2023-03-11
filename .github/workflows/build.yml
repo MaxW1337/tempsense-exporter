@@ -63,10 +63,28 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password:
+
+      - name: Docker meta
+        id: meta # you'll use this in the next step
+        uses: docker/metadata-action@v4
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            ${{env.REGISTRY}}/${{env.IMAGE_NAME}}
+          # Docker tags based on the following events/attributes
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ghcr.io/vgropp/tempsense-exporter:latest	
+          platforms: linux/amd64,linux/arm64,linux/arm/v6
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
